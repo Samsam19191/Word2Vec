@@ -97,3 +97,22 @@ for epoch in range(EPOCHS):
         progress_bar.update(1)
     epoch_loss /= len(dataloader)
     running_loss.append(epoch_loss)
+
+# wordvecs_input = model.expand.weight.detach().cpu().numpy()
+# plt.scatter(wordvecs_input[:, 0], wordvecs_input[:, 1])
+# plt.show()
+
+word_vectors = model.expand.weight.detach().cpu().numpy()
+
+# Reduce dimensions to 2D
+pca = PCA(n_components=2)
+reduced_vectors = pca.fit_transform(word_vectors)
+
+# Plotting the words in 2D
+plt.figure(figsize=(10, 10))
+for i, word in enumerate(unique_words):
+    plt.scatter(reduced_vectors[i, 0], reduced_vectors[i, 1])
+    plt.annotate(word, (reduced_vectors[i, 0], reduced_vectors[i, 1]))
+
+plt.title("Word Vectors in 2D")
+plt.show()
