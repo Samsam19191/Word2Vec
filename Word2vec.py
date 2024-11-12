@@ -36,6 +36,7 @@ other_direction = dataset.copy()
 other_direction.input = dataset.output
 other_direction.output = dataset.input
 
+# adding the other direction to the dataset
 new_dataset = pd.concat([dataset, other_direction], ignore_index=True)
 
 
@@ -71,6 +72,22 @@ class Word2Vec(nn.Module):
         return logits
 
 
+def plotit(wordvecs):
+
+    # Reduce dimensions to 2D
+    pca = PCA(n_components=2)
+    reduced_vectors = pca.fit_transform(wordvecs)
+
+    # Plotting the words in 2D
+    plt.figure(figsize=(10, 10))
+    for i, word in enumerate(unique_words):
+        plt.scatter(reduced_vectors[i, 0], reduced_vectors[i, 1])
+        plt.annotate(word, (reduced_vectors[i, 0], reduced_vectors[i, 1]))
+
+    plt.title("Word Vectors in 2D")
+    plt.show()
+
+
 new_dataset = CustomDataset(new_dataset)
 
 EMBED_SIZE = 2
@@ -79,7 +96,7 @@ model = Word2Vec(size, EMBED_SIZE)
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 model.to(device)
 # training parameters
-LR = 3e-4
+LR = 3e-3
 EPOCHS = 6000
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
@@ -102,17 +119,10 @@ for epoch in range(EPOCHS):
     epoch_loss /= len(dataloader)
     running_loss.append(epoch_loss)
 
-word_vectors = model.expand.weight.detach().cpu().numpy()
+word_vectors_expand = model.expand.weight.detach().cpu().numpy()
+word_vectore_embed = model.embed.weight.detach().cpu().numpy()
 
-# Reduce dimensions to 2D
-pca = PCA(n_components=2)
-reduced_vectors = pca.fit_transform(word_vectors)
 
-# Plotting the words in 2D
-plt.figure(figsize=(10, 10))
-for i, word in enumerate(unique_words):
-    plt.scatter(reduced_vectors[i, 0], reduced_vectors[i, 1])
-    plt.annotate(word, (reduced_vectors[i, 0], reduced_vectors[i, 1]))
-
-plt.title("Word Vectors in 2D")
-plt.show()
+plotit(word_vectore_embed)
+plotit(word_vectors_expand)
+plotit(word_vectore_embed + word_vectors_expand)
