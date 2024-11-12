@@ -2,7 +2,7 @@ import pandas as pd
 from torch.utils.data import Dataset, DataLoader
 import torch
 from torch import nn
-from tqdm import tqdm  # For progress bars
+from tqdm import tqdm
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 
@@ -32,6 +32,12 @@ unique_words = list(set(words))
 id2tok = dict(enumerate(set(Corpus.split())))
 tok2id = {tok: i for i, tok in id2tok.items()}
 
+other_direction = dataset.copy()
+other_direction.input = dataset.output
+other_direction.output = dataset.input
+
+new_dataset = pd.concat([dataset, other_direction], ignore_index=True)
+
 
 # defining the Dataset class
 class CustomDataset(Dataset):
@@ -41,7 +47,6 @@ class CustomDataset(Dataset):
         X.input = X.input.map(tok2id)
         X.output = X.output.map(tok2id)
 
-        # Change X.input and X.output
         self.X = X.output.values
         self.y = X.input.values
 
@@ -66,21 +71,20 @@ class Word2Vec(nn.Module):
         return logits
 
 
-dataset = CustomDataset(dataset)
+new_dataset = CustomDataset(new_dataset)
 
-# Instantiate 2 model
-EMBED_SIZE = 2  # Quite small, just for the tutorial
+EMBED_SIZE = 2
 size = len(unique_words)
 model = Word2Vec(size, EMBED_SIZE)
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 model.to(device)
-# Define training parameters
+# training parameters
 LR = 3e-4
-EPOCHS = 1000
+EPOCHS = 6000
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
 
-dataloader = DataLoader(dataset, batch_size=8, shuffle=True)
+dataloader = DataLoader(new_dataset, batch_size=8, shuffle=True)
 
 progress_bar = tqdm(range(EPOCHS * len(dataloader)))
 running_loss = []
@@ -97,10 +101,6 @@ for epoch in range(EPOCHS):
         progress_bar.update(1)
     epoch_loss /= len(dataloader)
     running_loss.append(epoch_loss)
-
-# wordvecs_input = model.expand.weight.detach().cpu().numpy()
-# plt.scatter(wordvecs_input[:, 0], wordvecs_input[:, 1])
-# plt.show()
 
 word_vectors = model.expand.weight.detach().cpu().numpy()
 
